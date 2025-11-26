@@ -2,14 +2,14 @@ import streamlit as st
 import os
 from openai import OpenAI
 
-# --- إعداد مفتاح API ---
+# --- API KEY ---
 api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key)
 
-# --- واجهة التطبيق ---
-st.set_page_config(page_title="Interior AI Designer", page_icon="🎨", layout="wide")
+# --- APP UI ---
+st.set_page_config(page_title="Interior AI Designer", page_icon="🛋️", layout="wide")
 
-st.title("🎨 Interior AI Designer")
+st.title("🛋️ Interior AI Designer")
 st.write("Your personal AI-powered interior design consultant.")
 
 description = st.text_area("Describe your room & purpose:")
@@ -43,4 +43,5 @@ messages=[{"role": "user", "content": prompt}]
 )
 
 answer = response.choices[0].message["content"]
+st.markdown(answer)
 st.markdown(answer)
