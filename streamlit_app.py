@@ -498,9 +498,15 @@ tab_overview, tab_arch, tab_furniture, tab_colors, tab_moodboard, tab_3d = st.ta
 )
 
 
+# Load results safely
+
+if "results" in st.session_state:
 
     results = st.session_state["results"]
 
+else:
+
+    results = None
 
 
     with tab_overview:
