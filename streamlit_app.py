@@ -200,7 +200,7 @@ Give a clear, structured plan in bullet points. Be specific and practical.
 
     response = client.chat.completions.create(
 
-        model="gpt-4o-mini",
+        model="dall-e-3",
 
         messages=[
 
