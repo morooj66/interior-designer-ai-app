@@ -487,10 +487,7 @@ Summarize the key ideas from:
 # ---------- RIGHT: RESULTS ----------
 
 with right_col:
-
-    st.markdown("### 📊 Design Analysis")
-
-
+     st.markdown("### 📊 Design Analysis")
 tab_overview, tab_arch, tab_furniture, tab_colors, tab_moodboard, tab_3d = st.tabs(
 
     ["Overview", "Architect Plan", "Furniture Plan", "Color Palette", "AI Moodboard", "3D Render"]
