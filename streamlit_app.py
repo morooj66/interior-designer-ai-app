@@ -18,33 +18,33 @@ st.write("Your multi-agent interior design consultant: Architect, Furniture Expe
 col1, col2 = st.columns(2)
 
 with col1:
-description = st.text_area(
-"Room Description",
-placeholder="Example: Small bedroom 3x4m, wants cozy modern vibes..."
-)
-style = st.selectbox(
-"Preferred Style",
-["Modern", "Minimal", "Classic", "Boho", "Luxury"]
-)
+    description = st.text_area(
+     "Room Description",
+      placeholder="Example: Small bedroom 3x4m, wants cozy modern vibes..."
+    )
+     style = st.selectbox(
+      "Preferred Style",
+      ["Modern", "Minimal", "Classic", "Boho", "Luxury"]
+    )
 
 with col2:
-budget = st.number_input("Budget (SAR)", min_value=500, max_value=100000)
-purpose = st.text_input("Purpose of the Room", "Sleeping, studying, relaxing...")
+    budget = st.number_input("Budget (SAR)", min_value=500, max_value=100000)
+    purpose = st.text_input("Purpose of the Room", "Sleeping, studying, relaxing...")
 
 # --------------------------
 # BUTTON ACTION
 # --------------------------
 if st.button("Generate Full Interior Plan"):
-with st.spinner("Agents are analyzing your space…"):
+    with st.spinner("Agents are analyzing your space…"):
 
 # --------------------------
 # AGENT 1 → ARCHITECT
 # --------------------------
-architect_prompt = f"""
-You are a senior architect.
+       architect_prompt = f"""
+       You are a senior architect.
 
-Task:
-Analyze the room and generate:
+ Task:
+ Analyze the room and generate:
 - Full design concept
 - Room flow
 - Space functionality improvements
