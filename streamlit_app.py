@@ -18,11 +18,11 @@ st.write("Your multi-agent interior design consultant: Architect, Furniture Expe
 col1, col2 = st.columns(2)
 
 with col1:
-    description = st.text_area(
-     "Room Description",
-      placeholder="Example: Small bedroom 3x4m, wants cozy modern vibes..."
-    )
-     style = st.selectbox(
+ description = st.text_area(
+    "Room Description",
+    placeholder="Example: Small bedroom 3x4m, wants cozy modern vibes..."
+)
+ style = st.selectbox(
       "Preferred Style",
       ["Modern", "Minimal", "Classic", "Boho", "Luxury"]
     )
