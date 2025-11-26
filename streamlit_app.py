@@ -54,7 +54,7 @@ with st.sidebar:
 
     st.markdown("---")
 
-    st.markdown("**Made by Murooj 💫**")
+    st.markdown("**Made by Morooj **")
 
 
 
