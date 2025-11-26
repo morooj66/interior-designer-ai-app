@@ -492,11 +492,11 @@ with right_col:
 
 
 
-    tab_overview, tab_architect, tab_furniture, tab_colors, tab_image = st.tabs(
+ tab_overview, tab_arch, tab_furniture, tab_colors, tab_moodboard, tab_3d = st.tabs(
 
-        ["Overview", "Architect Plan", "Furniture Plan", "Color Palette", "AI Moodboard"]
+    ["Overview", "Architect Plan", "Furniture Plan", "Color Palette", "AI Moodboard", "3D Render"]
 
-    )
+)
 
 
 
@@ -560,21 +560,86 @@ with right_col:
 
 
 
-    with tab_image:
+   with tab_moodboard:
 
-        st.markdown("### 🖼️ AI Moodboard / Render")
+    st.markdown("### 🎨 AI Moodboard (Furniture + Colors + Lighting)")
 
-        if results["image_bytes"]:
 
-            st.image(results["image_bytes"], caption="AI Moodboard for this design", use_column_width=True)
 
-            st.caption("يمكنك حفظ الصورة واستخدامها في البورتفوليو أو كمرجع تصميم.")
+    col1, col2 = st.columns(2)
 
-        else:
 
-            st.info(
 
-                "فعّلي خيار **Generate AI Moodboard image** من اليسار واضغطي الزر عشان تتولّد صورة للمودبورد."
+    with col1:
 
-            )
+        st.markdown("#### 🪑 Furniture Pieces")
+
+        # استدعاء توليد صور قطع أثاث فقط
+
+        furniture_img = client.images.generate(
+
+            model="gpt-image-1",
+
+            prompt=f"Moodboard showing ONLY furniture pieces for a {style} room. No walls, no room, no flooring.",
+
+            size="1024x1024"
+
+        )
+
+        st.image(base64.b64decode(furniture_img.data[0].b64_json))
+
+
+
+    with col2:
+
+        st.markdown("#### 🎨 Colors + Materials")
+
+        colors_img = client.images.generate(
+
+            model="gpt-image-1",
+
+            prompt=f"Color palette + materials + textures for a {style} interior. No furniture, no room.",
+
+            size="1024x1024"
+
+        )
+
+        st.image(base64.b64decode(colors_img.data[0].b64_json))
+
+
+with tabs[5]:   # New 3D Render Tab
+
+    st.markdown("## 🛋️ 3D Full Room Render")
+
+    
+
+    full_3d = client.images.generate(
+
+        model="gpt-image-1",
+
+        prompt=f"Ultra realistic 3D render for a {style} {purpose} room. Premium lighting, elegant layout, cinematic interior.",
+
+        size="1024x1024"
+
+    )
+
+
+
+    st.image(base64.b64decode(full_3d.data[0].b64_json))
+
+
+    st.markdown("#### 💡 Lighting Mood")
+
+    light_img = client.images.generate(
+
+        model="gpt-image-1",
+
+        prompt=f"Lighting mood board for a {style} {purpose} room. Soft light, warm tones.",
+
+        size="1024x1024"
+
+    )
+
+    st.image(base64.b64decode(light_img.data[0].b64_json))
+
 
