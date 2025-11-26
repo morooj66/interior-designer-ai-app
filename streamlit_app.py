@@ -200,7 +200,7 @@ Give a clear, structured plan in bullet points. Be specific and practical.
 
     response = client.chat.completions.create(
 
-        model="dall-e-3",
+        model="gpt-4o-mini",
 
         messages=[
 
@@ -280,7 +280,7 @@ Style must look realistic, Pinterest-level, cinematic lighting, 3D render style.
 
             result = client.images.edit(
 
-                model="dall-e-3",
+                model="gpt-image-1",
 
                 image=uploaded_photo,
 
@@ -293,20 +293,49 @@ Style must look realistic, Pinterest-level, cinematic lighting, 3D render style.
         else:
 
             # توليد من الصفر
+import requests
 
-            result = client.images.generate(
-
-                model="dall-e-3",
-
-                prompt=img_prompt,
-
-                size="1024x1024",
-
-            )
+import base64
 
 
 
-        image_base64 = result.data[0].b64_json
+def generate_image_stability(prompt):
+
+    url = "https://api.stability.ai/v2beta/stable-image/generate/core"
+
+    headers = {
+
+        "Authorization": f"Bearer {stability_api_key}",
+
+        "Accept": "application/json",
+
+        "Content-Type": "application/json"
+
+    }
+
+    payload = {
+
+        "prompt": prompt,
+
+        "output_format": "png",
+
+        "mode": "photo"
+
+    }
+
+
+
+    response = requests.post(url, headers=headers, json=payload)
+
+
+
+    data = response.json()
+
+    image_base64 = data["image"]
+
+    return base64.b64decode(image_base64)
+
+
 
         image_bytes = base64.b64decode(image_base64)
 
@@ -424,7 +453,7 @@ Summarize the key ideas from:
 
             summary_answer = client.chat.completions.create(
 
-                model="dall-e-3",
+                model="gpt-4o-mini",
 
                 messages=[
 
@@ -458,11 +487,7 @@ Summarize the key ideas from:
 
             if generate_moodboard:
 
-                image_bytes = generate_moodboard_image(
-
-                    description, style, purpose, budget, uploaded_photo
-
-                )
+             image_bytes = generate_image_stability(img_prompt)
 
 
 
