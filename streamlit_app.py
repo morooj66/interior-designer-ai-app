@@ -1,20 +1,28 @@
-import streamlit as st
-
 import os
 
 import base64
 
+from io import BytesIO
+
+
+
+import streamlit as st
+
 from openai import OpenAI
 
+from PIL import Image
 
 
-# ------------ API KEY ------------
 
-api_key = os.getenv("OPENAI_API_KEY")
+# ---------- OPENAI CLIENT ----------
+
+api_key = os.environ.get("OPENAI_API_KEY")
 
 if not api_key:
 
-    st.error("❌ OPENAI_API_KEY is not set. Add it in Streamlit → Settings → Secrets.")
+    st.set_page_config(page_title="AI Interior Studio", page_icon="🛋️", layout="wide")
+
+    st.error("⚠️ Please set OPENAI_API_KEY in Streamlit Secrets.")
 
     st.stop()
 
@@ -24,75 +32,59 @@ client = OpenAI(api_key=api_key)
 
 
 
-# ------------ PAGE CONFIG ------------
+# ---------- PAGE CONFIG ----------
 
-st.set_page_config(
-
-    page_title="AI Interior Studio",
-
-    page_icon="🛋️",
-
-    layout="wide"
-
-)
+st.set_page_config(page_title="AI Interior Studio", page_icon="🛋️", layout="wide")
 
 
 
-# ------------ SIDEBAR ------------
+# ---------- SIDEBAR ----------
 
 with st.sidebar:
 
-    st.markdown("### 🛋️ AI Interior Studio")
+    st.title("🛋️ AI Interior Studio")
 
-    st.write("Multi-agent interior assistant:")
+    st.caption("Multi-agent interior assistant:")
 
-    st.write("- 🧱 Architect agent")
-
-    st.write("- 🛏️ Furniture stylist")
-
-    st.write("- 🎨 Color palette expert")
+    st.markdown("- 🏛️ **Architect agent**\n- 🪑 **Furniture stylist**\n- 🎨 **Color palette expert**")
 
     st.markdown("---")
 
-    st.markdown("**Made by Morooj **")
+    st.markdown("Made by **Murooj** ✨")
 
 
 
-# ------------ HEADER ------------
+# ---------- INIT SESSION STATE ----------
 
-st.markdown(
+if "results" not in st.session_state:
 
-    "<h1 style='font-size:40px; margin-bottom:0;'>AI Interior Studio</h1>",
+    st.session_state["results"] = {
 
-    unsafe_allow_html=True,
+        "summary": None,
 
-)
+        "architect": None,
 
-st.markdown(
+        "furniture": None,
 
-    "<p style='font-size:16px; color:#cccccc;'>Your multi-agent interior design consultant: Architect, Furniture Expert, and Color Stylist.</p>",
+        "colors": None,
 
-    unsafe_allow_html=True,
+        "image_bytes": None,
 
-)
-
-
-
-st.markdown("---")
+    }
 
 
 
-# ------------ LAYOUT ------------
+# ---------- LAYOUT ----------
 
-left_col, right_col = st.columns([1.1, 1.2])
+left_col, right_col = st.columns([1, 1.2])
 
 
 
-# ------------ LEFT: INPUTS ------------
+# ---------- LEFT: ROOM INPUTS ----------
 
 with left_col:
 
-    st.subheader("📋 Room Details")
+    st.markdown("### 📋 Room Details")
 
 
 
@@ -100,9 +92,7 @@ with left_col:
 
         "Room Description",
 
-        placeholder="Example: Small bedroom 3x4m, one window, wants cozy modern vibes and study corner...",
-
-        height=140
+        placeholder="Example: Small bedroom 3x4m, one window, wants cozy modern vibes and a study corner...",
 
     )
 
@@ -112,7 +102,9 @@ with left_col:
 
         "Preferred Style",
 
-        ["Modern", "Minimal", "Classic", "Boho", "Luxury", "Japandi", "Scandinavian"]
+        ["Modern", "Minimal", "Classic", "Boho", "Luxury"],
+
+        index=0,
 
     )
 
@@ -122,7 +114,7 @@ with left_col:
 
         "Purpose of the Room",
 
-        "Sleeping, studying, relaxing..."
+        value="Sleeping, studying, relaxing...",
 
     )
 
@@ -134,11 +126,11 @@ with left_col:
 
         min_value=500,
 
-        max_value=100000,
+        max_value=200_000,
 
         value=5000,
 
-        step=500
+        step=500,
 
     )
 
@@ -146,27 +138,25 @@ with left_col:
 
     st.markdown("### 🖼️ Optional: Room Photo")
 
-
-
-    uploaded_image = st.file_uploader(
+    uploaded_photo = st.file_uploader(
 
         "Upload a reference photo (optional)",
 
-        type=["jpg", "jpeg", "png"]
+        type=["jpg", "jpeg", "png"],
 
     )
 
 
 
-    if uploaded_image is not None:
-
-        st.image(uploaded_image, caption="Uploaded Room Photo", use_column_width=True)
-
-
-
     st.markdown("### 🎨 Optional: Generate AI Moodboard")
 
-    generate_image = st.checkbox("Generate AI moodboard image for this design")
+    generate_moodboard = st.checkbox(
+
+        "Generate AI moodboard image for this design",
+
+        value=True,
+
+    )
 
 
 
@@ -174,17 +164,63 @@ with left_col:
 
 
 
-# ------------ HELPER: CALL CHAT ------------
+# ---------- HELPER: CALL CHAT AGENT ----------
 
-def call_agent(prompt: str) -> str:
+def call_agent(role_description: str, description: str, style: str, purpose: str, budget: int) -> str:
+
+    """
+
+    role_description: مثل 'an architect and layout expert'
+
+    يرجع نص من الموديل لهذا الدور.
+
+    """
+
+    user_prompt = f"""
+
+You are {role_description} for interior design.
+
+
+
+Room description: {description}
+
+Preferred style: {style}
+
+Purpose of the room: {purpose}
+
+Budget: {budget} SAR
+
+
+
+Give a clear, structured plan in bullet points. Be specific and practical.
+
+"""
+
+
 
     response = client.chat.completions.create(
 
         model="gpt-4o-mini",
 
-        messages=[{"role": "user", "content": prompt}],
+        messages=[
+
+            {
+
+                "role": "system",
+
+                "content": "You are a professional interior designer. Answer in clear Markdown with headings and bullet points.",
+
+            },
+
+            {"role": "user", "content": user_prompt},
+
+        ],
+
+        temperature=0.8,
 
     )
+
+
 
     return response.choices[0].message.content
 
@@ -192,333 +228,353 @@ def call_agent(prompt: str) -> str:
 
 
 
-# ------------ RIGHT: RESULTS ------------
+# ---------- HELPER: GENERATE MOODBOARD IMAGE ----------
 
-with right_col:
+def generate_moodboard_image(description: str, style: str, purpose: str, budget: int, uploaded_photo):
 
-    st.subheader("📊 Design Analysis")
+    """
 
+    إذا فيه صورة يرسلها كـ reference مع تعديل بسيط.
 
+    إذا ما فيه، يولّد صورة من الصفر.
 
-    if not clicked:
+    يرجع bytes للصورة أو None.
 
-        st.info("Fill the details on the left, then click **Generate Full Interior Plan**.")
+    """
 
-    else:
+    img_prompt = f"""
 
-        if not description.strip():
-
-            st.error("Please write a room description first.")
-
-        else:
-
-            with st.spinner("Agents are working on your interior plan..."):
+High-end interior design moodboard for a {style} room.
 
 
 
-                # ---------- BUILD BASE CONTEXT ----------
-
-                image_note = ""
-
-                if uploaded_image is not None:
-
-                    image_note = (
-
-                        "\nThe user also uploaded a reference photo. "
-
-                        "Imagine the current furniture and layout from that photo when giving suggestions."
-
-                    )
-
-
-
-                base_context = f"""
-
-Room Description: {description}
-
-Style: {style}
-
-Budget: {budget} SAR
+Room: {description}
 
 Purpose: {purpose}
 
-{image_note}
+Budget level: around {budget} SAR (mid-range Saudi market).
 
-                """
 
 
+Show:
 
-                # ---------- ARCHITECT AGENT ----------
+- wall colors and textures
 
-                architect_prompt = f"""
+- main furniture pieces
 
-You are a senior architect and interior space planner.
+- lighting mood
 
+- textiles and decor
 
+Style must look realistic, Pinterest-level, cinematic lighting, 3D render style.
 
-Analyze this room and create a clear interior architecture plan.
+"""
 
 
 
-{base_context}
+    try:
 
+        if uploaded_photo is not None:
 
+            # استخدم الصورة كمرجع تعديل
 
-Please provide:
+            result = client.images.edit(
 
+                model="gpt-image-1",
 
+                image=uploaded_photo,
 
-1. **Space & layout concept** – how to arrange zones (sleeping, studying, seating, storage, etc.)
+                prompt=img_prompt,
 
-2. **Suggested layout** – describe where the bed, desk, wardrobe, etc. should go.
+                size="1024x1024",
 
-3. **Wall & ceiling ideas** – niches, panels, shelves, lighting coves (within a realistic budget).
+            )
 
-4. **Practical notes** – circulation, natural light, privacy, and ergonomic tips.
+        else:
 
+            # توليد من الصفر
 
+            result = client.images.generate(
 
-Keep it concise but very practical for a real designer.
+                model="gpt-image-1",
 
-Output in formatted bullet points.
+                prompt=img_prompt,
 
-                """
+                size="1024x1024",
 
+            )
 
 
-                # ---------- FURNITURE AGENT ----------
 
-                furniture_prompt = f"""
+        image_base64 = result.data[0].b64_json
 
-You are a senior furniture stylist and shopper.
+        image_bytes = base64.b64decode(image_base64)
 
+        return image_bytes
 
 
-Based on the following room and budget, suggest **realistic furniture plan**.
 
+    except Exception as e:
 
+        st.warning(f"⚠️ Image generation failed: {e}")
 
-{base_context}
+        return None
 
 
 
-Return:
 
 
+# ---------- WHEN BUTTON CLICKED ----------
 
-1. **Furniture list** (3–8 items) with:
+if clicked:
 
-   - Name / type
+    if not description.strip():
 
-   - Why it fits the style & function
+        st.warning("اكتبي وصف الغرفة أول 🙏")
 
-   - Approximate price range in SAR
+    else:
 
-2. **Zoning tips** – how to place each item in the room.
+        with st.spinner("✨ Agents are analyzing your space..."):
 
-3. **Budget summary** – how to distribute the budget (percentages per category).
+            # 1) استدعاء الوكلاء
 
+            architect_answer = call_agent(
 
+                "an architect and layout expert",
 
-Keep it realistic for Saudi market prices (rough ranges are okay).
+                description,
 
-                """
+                style,
 
+                purpose,
 
+                budget,
 
-                # ---------- COLOR AGENT ----------
+            )
 
-                color_prompt = f"""
 
-You are a color palette and material specialist.
 
+            furniture_answer = call_agent(
 
+                "a furniture selection and sourcing expert",
 
-Create a cohesive palette for this room.
+                description,
 
+                style,
 
+                purpose,
 
-{base_context}
+                budget,
 
+            )
 
 
-Return:
 
+            color_answer = call_agent(
 
+                "a color palette and materials specialist",
 
-1. **Main base color** (walls) – HEX code + short explanation.
+                description,
 
-2. **Secondary colors** (furniture / large pieces) – HEX codes + usage.
+                style,
 
-3. **Accent colors** (decor, cushions, art) – HEX codes + where to use them.
+                purpose,
 
-4. **Materials suggestions** – e.g., wood type, metals, fabrics.
+                budget,
 
-5. **Mood description** – 2–3 lines describing the vibe of the space.
+            )
 
 
 
-Use clear headings and bullet points.
+            # 2) ملخص عام للعميل
 
-                """
+            summary_prompt = f"""
 
+You are a senior interior designer.
 
 
-                # ---------- CALL AGENTS ----------
 
-                architect_answer = call_agent(architect_prompt)
+Create a friendly client-facing summary (max 2 paragraphs + bullet list)
 
-                furniture_answer = call_agent(furniture_prompt)
+for this room design in English:
 
-                color_answer = call_agent(color_prompt)
 
 
+Room: {description}
 
-                # ---------- TABS ----------
+Style: {style}
 
-                tab_overview, tab_architect, tab_furniture, tab_colors, tab_image = st.tabs(
+Purpose: {purpose}
 
-                    ["Overview", "Architect Plan", "Furniture Plan", "Color Palette", "AI Moodboard"]
+Budget: {budget} SAR
+
+
+
+Summarize the key ideas from:
+
+- Architectural / layout plan
+
+- Furniture plan
+
+- Color palette plan
+
+"""
+
+
+
+            summary_answer = client.chat.completions.create(
+
+                model="gpt-4o-mini",
+
+                messages=[
+
+                    {
+
+                        "role": "system",
+
+                        "content": "You summarize interior design plans in simple, client-friendly English.",
+
+                    },
+
+                    {
+
+                        "role": "user",
+
+                        "content": summary_prompt,
+
+                    },
+
+                ],
+
+                temperature=0.7,
+
+            ).choices[0].message.content
+
+
+
+            # 3) توليد الصورة (اختياري)
+
+            image_bytes = None
+
+            if generate_moodboard:
+
+                image_bytes = generate_moodboard_image(
+
+                    description, style, purpose, budget, uploaded_photo
 
                 )
 
 
 
-                with tab_overview:
+            # 4) حفظ النّتائج في session_state
 
-                    st.markdown("### 🧾 Quick Summary")
+            st.session_state["results"] = {
 
-                    summary_prompt = f"""
+                "summary": summary_answer,
 
-You are a senior interior consultant.
+                "architect": architect_answer,
 
+                "furniture": furniture_answer,
 
+                "colors": color_answer,
 
-Combine and summarize the following 3 analyses into a short,
+                "image_bytes": image_bytes,
 
-client-friendly overview in Arabic and English.
+            }
 
 
 
-ROOM CONTEXT:
+# ---------- RIGHT: RESULTS ----------
 
-{base_context}
+with right_col:
 
+    st.markdown("### 📊 Design Analysis")
 
 
-ARCHITECT:
 
-{architect_answer}
+    tab_overview, tab_architect, tab_furniture, tab_colors, tab_image = st.tabs(
 
+        ["Overview", "Architect Plan", "Furniture Plan", "Color Palette", "AI Moodboard"]
 
+    )
 
-FURNITURE:
 
-{furniture_answer}
 
+    results = st.session_state["results"]
 
 
-COLORS:
 
-{color_answer}
+    with tab_overview:
 
-                    """
+        if results["summary"]:
 
-                    summary = call_agent(summary_prompt)
+            st.markdown("### 🧾 Quick Summary")
 
-                    st.markdown(summary)
+            st.markdown(results["summary"])
 
+        else:
 
+            st.info("اضغطي على **Generate Full Interior Plan** بعد ما تعبّين بيانات الغرفة.")
 
-                with tab_architect:
 
-                    st.markdown("### 🏛️ Architect / Layout Plan")
 
-                    st.markdown(architect_answer)
+    with tab_architect:
 
+        if results["architect"]:
 
+            st.markdown("### 🏛️ Architect / Layout Plan")
 
-                with tab_furniture:
+            st.markdown(results["architect"])
 
-                    st.marknown("### 🛋️ Furniture & Budget Plan")
+        else:
 
-                    st.markdown(furniture_answer)
+            st.info("سيظهر هنا مخطط توزيع الغرفة (layout) بعد تشغيل الأداة.")
 
 
 
-                with tab_colors:
+    with tab_furniture:
 
-                    st.markdown("### 🎨 Color Palette & Materials")
+        if results["furniture"]:
 
-                    st.markdown(color_answer)
+            st.markdown("### 🪑 Furniture & Budget Plan")
 
+            st.markdown(results["furniture"])
 
+        else:
 
-                # ---------- IMAGE GENERATION ----------
+            st.info("سيظهر هنا تحليل الأثاث واقتراح القطع بعد تشغيل الأداة.")
 
-                with tab_image:
 
-                    if not generate_image:
 
-                        st.info("Tick **Generate AI moodboard image** on the left to create a visual.")
+    with tab_colors:
 
-                    else:
+        if results["colors"]:
 
-                        try:
+            st.markdown("### 🎨 Color Palette & Materials")
 
-                            img_prompt = f"""
+            st.markdown(results["colors"])
 
-Highly realistic interior render, Pinterest level, of a {style} room.
+        else:
 
-Use this brief:
+            st.info("سيظهر هنا اقتراح الألوان والمواد بعد تشغيل الأداة.")
 
 
 
-{base_context}
+    with tab_image:
 
+        st.markdown("### 🖼️ AI Moodboard / Render")
 
+        if results["image_bytes"]:
 
-Focus on:
+            st.image(results["image_bytes"], caption="AI Moodboard for this design", use_column_width=True)
 
-- composition following the architect & furniture plan,
+            st.caption("يمكنك حفظ الصورة واستخدامها في البورتفوليو أو كمرجع تصميم.")
 
-- color palette similar to the suggested HEX colors,
+        else:
 
-- soft natural lighting, very aesthetic.
+            st.info(
 
+                "فعّلي خيار **Generate AI Moodboard image** من اليسار واضغطي الزر عشان تتولّد صورة للمودبورد."
 
-
-Cinematic, 4K, interior photography style.
-
-                            """
-
-
-
-                            img_response = client.images.generate(
-
-                                model="gpt-image-1",
-
-                                prompt=img_prompt,
-
-                                size="1024x1024",
-
-                                n=1
-
-                            )
-
-
-
-                            b64_data = img_response.data[0].b64_json
-
-                            img_bytes = base64.b64decode(b64_data)
-
-                            st.image(img_bytes, caption="AI Moodboard Render", use_column_width=True)
-
-
-
-                        except Exception as e:
-
-                            st.error(f"Image generation error: {e}")
-
-                            st.info("The text agents still work fine even if image fails.")
+            )
 
