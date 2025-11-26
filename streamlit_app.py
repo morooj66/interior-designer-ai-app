@@ -280,7 +280,7 @@ Style must look realistic, Pinterest-level, cinematic lighting, 3D render style.
 
             result = client.images.edit(
 
-                model="gpt-image-1",
+                model="dall-e-3",
 
                 image=uploaded_photo,
 
@@ -296,7 +296,7 @@ Style must look realistic, Pinterest-level, cinematic lighting, 3D render style.
 
             result = client.images.generate(
 
-                model="gpt-image-1",
+                model="dall-e-3",
 
                 prompt=img_prompt,
 
@@ -424,7 +424,7 @@ Summarize the key ideas from:
 
             summary_answer = client.chat.completions.create(
 
-                model="gpt-4o-mini",
+                model="dall-e-3",
 
                 messages=[
 
