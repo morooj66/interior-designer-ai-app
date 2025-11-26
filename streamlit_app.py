@@ -491,8 +491,7 @@ with right_col:
     st.markdown("### 📊 Design Analysis")
 
 
-
- tab_overview, tab_arch, tab_furniture, tab_colors, tab_moodboard, tab_3d = st.tabs(
+tab_overview, tab_arch, tab_furniture, tab_colors, tab_moodboard, tab_3d = st.tabs(
 
     ["Overview", "Architect Plan", "Furniture Plan", "Color Palette", "AI Moodboard", "3D Render"]
 
@@ -559,28 +558,29 @@ with right_col:
             st.info("سيظهر هنا اقتراح الألوان والمواد بعد تشغيل الأداة.")
 
 
-
-   with tab_moodboard:
-
-    st.markdown("### 🎨 AI Moodboard (Furniture + Colors + Lighting)")
+with tab_moodboard:
 
 
 
-    col1, col2 = st.columns(2)
+    st.markdown("## 🎨 AI Moodboard (Furniture + Colors + Lighting + 3D)")
 
 
+
+    col1, col2, col3, col4 = st.columns(4)
+
+
+
+    # --------- Column 1: Furniture ---------
 
     with col1:
 
-        st.markdown("#### 🪑 Furniture Pieces")
-
-        # استدعاء توليد صور قطع أثاث فقط
+        st.markdown("### 🛋️ Furniture Pieces")
 
         furniture_img = client.images.generate(
 
             model="gpt-image-1",
 
-            prompt=f"Moodboard showing ONLY furniture pieces for a {style} room. No walls, no room, no flooring.",
+            prompt=f"Moodboard showing ONLY furniture pieces for a {style} room. No walls, no room.",
 
             size="1024x1024"
 
@@ -590,15 +590,17 @@ with right_col:
 
 
 
+    # --------- Column 2: Colors ---------
+
     with col2:
 
-        st.markdown("#### 🎨 Colors + Materials")
+        st.markdown("### 🎨 Colors + Materials")
 
         colors_img = client.images.generate(
 
             model="gpt-image-1",
 
-            prompt=f"Color palette + materials + textures for a {style} interior. No furniture, no room.",
+            prompt=f"Color palette + materials & textures for a {style} interior.",
 
             size="1024x1024"
 
@@ -607,39 +609,47 @@ with right_col:
         st.image(base64.b64decode(colors_img.data[0].b64_json))
 
 
-with tabs[5]:   # New 3D Render Tab
 
-    st.markdown("## 🛋️ 3D Full Room Render")
+    # --------- Column 3: Lighting ---------
 
-    
+    with col3:
 
-    full_3d = client.images.generate(
+        st.markdown("### 💡 Lighting Mood")
 
-        model="gpt-image-1",
+        light_img = client.images.generate(
 
-        prompt=f"Ultra realistic 3D render for a {style} {purpose} room. Premium lighting, elegant layout, cinematic interior.",
+            model="gpt-image-1",
 
-        size="1024x1024"
+            prompt=f"Lighting mood board for a {style} {purpose} room. Soft light, warm tones.",
 
-    )
+            size="1024x1024"
 
+        )
 
-
-    st.image(base64.b64decode(full_3d.data[0].b64_json))
-
-
-    st.markdown("#### 💡 Lighting Mood")
-
-    light_img = client.images.generate(
-
-        model="gpt-image-1",
-
-        prompt=f"Lighting mood board for a {style} {purpose} room. Soft light, warm tones.",
-
-        size="1024x1024"
-
-    )
-
-    st.image(base64.b64decode(light_img.data[0].b64_json))
+        st.image(base64.b64decode(light_img.data[0].b64_json))
 
 
+
+    # --------- Column 4: 3D Render ---------
+
+    with col4:
+
+        st.markdown("### 🛋️ 3D Full Render")
+
+        try:
+
+            full_3d = client.images.generate(
+
+                model="gpt-image-1",
+
+                prompt=f"Ultra realistic 3D render of a {style} {purpose} room. Cinematic, premium, luxurious.",
+
+                size="1024x1024"
+
+            )
+
+            st.image(base64.b64decode(full_3d.data[0].b64_json))
+
+        except Exception as e:
+
+            st.error("3D render failed: " + str(e))
