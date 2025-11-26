@@ -293,49 +293,20 @@ Style must look realistic, Pinterest-level, cinematic lighting, 3D render style.
         else:
 
             # توليد من الصفر
-import requests
 
-import base64
+            result = client.images.generate(
 
+                model="gpt-image-1",
 
+                prompt=img_prompt,
 
-def generate_image_stability(prompt):
+                size="1024x1024",
 
-    url = "https://api.stability.ai/v2beta/stable-image/generate/core"
-
-    headers = {
-
-        "Authorization": f"Bearer {stability_api_key}",
-
-        "Accept": "application/json",
-
-        "Content-Type": "application/json"
-
-    }
-
-    payload = {
-
-        "prompt": prompt,
-
-        "output_format": "png",
-
-        "mode": "photo"
-
-    }
+            )
 
 
 
-    response = requests.post(url, headers=headers, json=payload)
-
-
-
-    data = response.json()
-
-    image_base64 = data["image"]
-
-    return base64.b64decode(image_base64)
-
-
+        image_base64 = result.data[0].b64_json
 
         image_bytes = base64.b64decode(image_base64)
 
@@ -487,7 +458,11 @@ Summarize the key ideas from:
 
             if generate_moodboard:
 
-             image_bytes = generate_image_stability(img_prompt)
+                image_bytes = generate_moodboard_image(
+
+                    description, style, purpose, budget, uploaded_photo
+
+                )
 
 
 
