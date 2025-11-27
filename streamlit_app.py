@@ -681,11 +681,13 @@ with tab_moodboard:
 
         st.image(base64.b64decode(colors_img.data[0].b64_json))
 
-try:
+ # --- IMAGE GENERATION ---
 
-        if uploaded_photo is not None:
+    if uploaded_photo is not None:
 
-            # If user uploaded a photo → edit mode
+        # User uploaded a photo → edit mode
+
+        try:
 
             result = client.images.edit(
 
@@ -699,9 +701,31 @@ try:
 
             )
 
-        else:
 
-            # Generate from scratch
+
+            image_base64 = result.data[0].b64_json
+
+            image_bytes = base64.b64decode(image_base64)
+
+
+
+            return image_bytes
+
+
+
+        except Exception as e:
+
+            st.error("Image editing failed: " + str(e))
+
+            return None
+
+
+
+    else:
+
+        # Generate from scratch
+
+        try:
 
             result = client.images.generate(
 
@@ -713,35 +737,21 @@ try:
 
             )
 
-try:
 
-        # your generation code here
 
-        result = client.images.generate(
+            image_base64 = result.data[0].b64_json
 
-            model="gpt-image-1",
-
-            prompt=img_prompt,
-
-            size="1024x1024"
-
-        )
+            image_bytes = base64.b64decode(image_base64)
 
 
 
-        image_base64 = result.data[0].b64_json
-
-        image_bytes = base64.b64decode(image_base64)
-
-        return image_bytes
+            return image_bytes
 
 
 
-    except Exception as e:
+        except Exception as e:
 
-        st.error("⚠️ Image generation failed: " + str(e))
+            st.error("Image generation failed: " + str(e))
 
-        return None
-
-
+            return None
 
