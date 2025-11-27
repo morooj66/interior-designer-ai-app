@@ -159,7 +159,7 @@ with left_col:
 
 
 
------- OUTPUT TABS (This MUST be outside the columns) ------
+#------ OUTPUT TABS (This MUST be outside the columns) ------
 
 tabs = st.tabs(["Overview", "Architect Plan", "Furniture Plan", "Color Palette", "AI Moodboard", "3D Render"])
 
