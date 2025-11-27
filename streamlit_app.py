@@ -682,7 +682,52 @@ with tab_moodboard:
         st.image(base64.b64decode(colors_img.data[0].b64_json))
 
 try:
-        except Exception as e:
 
-            st.error("3D render failed: " + str(e))
+        if uploaded_photo is not None:
+
+            # If user uploaded a photo → edit mode
+
+            result = client.images.edit(
+
+                model="gpt-image-1",
+
+                image=uploaded_photo,
+
+                prompt=img_prompt,
+
+                size="1024x1024"
+
+            )
+
+        else:
+
+            # Generate from scratch
+
+            result = client.images.generate(
+
+                model="gpt-image-1",
+
+                prompt=img_prompt,
+
+                size="1024x1024"
+
+            )
+
+
+
+        # Decode base64 returned image
+
+        image_base64 = result.data[0].b64_json
+
+        image_bytes = base64.b64decode(image_base64)
+
+        return image_bytes
+
+
+
+    except Exception as e:
+
+        st.error("⚠️ Image generation failed: " + str(e))
+
+        return None
 
