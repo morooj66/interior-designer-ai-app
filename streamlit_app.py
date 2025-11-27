@@ -10,11 +10,9 @@ import streamlit as st
 
 from openai import OpenAI
 
-from PIL import Image
 
 
-
-# ---------- OPENAI CLIENT ----------
+# ========== إعداد مفتاح OpenAI ==========
 
 api_key = os.environ.get("OPENAI_API_KEY")
 
@@ -22,7 +20,7 @@ if not api_key:
 
     st.set_page_config(page_title="AI Interior Studio", page_icon="🛋️", layout="wide")
 
-    st.error("⚠️ Please set OPENAI_API_KEY in Streamlit Secrets.")
+    st.error("⚠️ ضيفي متغير البيئة OPENAI_API_KEY في Streamlit Secrets.")
 
     st.stop()
 
@@ -32,21 +30,29 @@ client = OpenAI(api_key=api_key)
 
 
 
-# ---------- PAGE CONFIG ----------
+# ========== إعداد الصفحة ==========
 
 st.set_page_config(page_title="AI Interior Studio", page_icon="🛋️", layout="wide")
 
 
 
-# ---------- SIDEBAR ----------
+# ========== الشريط الجانبي ==========
 
 with st.sidebar:
 
     st.title("🛋️ AI Interior Studio")
 
-    st.caption("Multi-agent interior assistant:")
+    st.caption("Multi-Agent Interior Assistant:")
 
-    st.markdown("- 🏛️ **Architect agent**\n- 🪑 **Furniture stylist**\n- 🎨 **Color palette expert**")
+    st.markdown(
+
+        "- 🏛️ **Architect Agent** (المخطط والتوزيع)\n"
+
+        "- 🪑 **Furniture Stylist** (اختيار الأثاث والميزانية)\n"
+
+        "- 🎨 **Color Expert** (الألوان والخامات)"
+
+    )
 
     st.markdown("---")
 
@@ -54,7 +60,7 @@ with st.sidebar:
 
 
 
-# ---------- INIT SESSION STATE ----------
+# ========== تهيئة حالة الجلسة ==========
 
 if "results" not in st.session_state:
 
@@ -68,14 +74,25 @@ if "results" not in st.session_state:
 
         "colors": None,
 
-        "image_bytes": None,
+        "description": "",
+
+        "style": "",
+
+        "purpose": "",
+
+        "budget": 0,
 
     }
 
 
+
+# ========== تقسيم الصفحة يمين/يسار ==========
+
 left_col, right_col = st.columns([1, 2])
 
 
+
+# ================= LEFT: إدخال بيانات الغرفة =================
 
 with left_col:
 
@@ -87,7 +104,7 @@ with left_col:
 
         "Room Description",
 
-        placeholder="Example: Small bedroom 3x4m, one window, wants cozy modern vibes and a study corner...",
+        placeholder="Example: Cozy living room 4x5m with one big window, wants luxury vibes with beige & brown tones...",
 
     )
 
@@ -97,7 +114,7 @@ with left_col:
 
         "Preferred Style",
 
-        ["Modern", "Minimal", "Classic", "Boho", "Luxury"],
+        ["Modern", "Minimal", "Classic", "Boho", "Luxury", "Japandi"],
 
         index=0,
 
@@ -109,7 +126,7 @@ with left_col:
 
         "Purpose of the Room",
 
-        value="Sleeping, studying, relaxing...",
+        value="Relaxing, watching TV, hosting guests...",
 
     )
 
@@ -119,39 +136,29 @@ with left_col:
 
         "Budget (SAR)",
 
-        min_value=500,
+        min_value=1000,
 
-        max_value=200000,
+        max_value=300000,
 
-        value=5000,
+        value=15000,
 
-        step=500,
+        step=1000,
 
     )
 
 
-
-    st.markdown("### 🖼️ Optional: Room Photo")
 
     uploaded_photo = st.file_uploader(
 
         "Upload a reference photo (optional)",
 
-        type=["jpg", "jpeg", "png"]
+        type=["jpg", "jpeg", "png"],
 
     )
 
 
 
-    st.markdown("### 🎨 Optional: Generate AI Moodboard")
-
-    generate_moodboard = st.checkbox(
-
-        "Generate AI moodboard image for this design",
-
-        value=True,
-
-    )
+    generate_moodboard = st.checkbox("Generate AI Moodboard + 3D Render", value=True)
 
 
 
@@ -159,80 +166,17 @@ with left_col:
 
 
 
-#------ OUTPUT TABS (This MUST be outside the columns) ------
-
-tabs = st.tabs(["Overview", "Architect Plan", "Furniture Plan", "Color Palette", "AI Moodboard", "3D Render"])
 
 
-
-with tabs[0]:
-
-    st.markdown("## Overview")
-
-    st.write(summary_answer)
-
-
-
-with tabs[1]:
-
-    st.markdown("## Architect Plan")
-
-    st.write(architect_answer)
-
-
-
-with tabs[2]:
-
-    st.markdown("## Furniture Plan")
-
-    st.write(furniture_answer)
-
-
-
-with tabs[3]:
-
-    st.markdown("## Color Palette")
-
-    st.write(color_answer)
-
-
-
-with tabs[4]:
-
-    st.markdown("## AI Moodboard")
-
-    if moodboard_img:
-
-        st.image(moodboard_img, use_column_width=True)
-
-    else:
-
-        st.info("No moodboard generated.")
-
-
-
-with tabs[5]:
-
-    st.markdown("## 3D Render")
-
-    if render_img:
-
-        st.image(render_img, use_column_width=True)
-
-    else:
-
-        st.info("3D render not available.")
-
-
-# ---------- HELPER: CALL CHAT AGENT ----------
+# ================= دالة الـ Agents (نص) =================
 
 def call_agent(role_description: str, description: str, style: str, purpose: str, budget: int) -> str:
 
     """
 
-    role_description: مثل 'an architect and layout expert'
+    role_description مثال:
 
-    يرجع نص من الموديل لهذا الدور.
+    'an architect and layout expert'
 
     """
 
@@ -246,13 +190,15 @@ Room description: {description}
 
 Preferred style: {style}
 
-Purpose of the room: {purpose}
+Purpose: {purpose}
 
 Budget: {budget} SAR
 
 
 
-Give a clear, structured plan in bullet points. Be specific and practical.
+Provide a clear, structured plan in bullet points.
+
+Be specific and practical, not generic.
 
 """
 
@@ -268,7 +214,7 @@ Give a clear, structured plan in bullet points. Be specific and practical.
 
                 "role": "system",
 
-                "content": "You are a professional interior designer. Answer in clear Markdown with headings and bullet points.",
+                "content": "You are a senior interior designer. Answer in clean Markdown with headings and bullet points.",
 
             },
 
@@ -288,109 +234,133 @@ Give a clear, structured plan in bullet points. Be specific and practical.
 
 
 
-# ---------- HELPER: GENERATE MOODBOARD IMAGE ----------
-def generate_moodboard_image(description: str, style: str, purpose: str, budget: int, uploaded_photo):
+# ================= دالة: بلوك المودبورد (أثاث + ألوان) =================
 
-    st.markdown("### 🎨 AI Moodboard (Furniture + Colors + Lighting + 3D Render)")
+def render_moodboard_block(style: str, description: str, purpose: str, budget: int):
+
+    """
+
+    يعرض مودبورد مقسوم:
+
+    - عمود يسار: قطع الأثاث
+
+    - عمود يمين: الألوان والخامات
+
+    وتحتها إضاءة مزاجية
+
+    """
+
+    col1, col2 = st.columns(2)
 
 
+
+    # ----- 1) Furniture Pieces -----
+
+    with col1:
+
+        st.markdown("#### 🪑 Furniture Pieces")
+
+        prompt_furniture = (
+
+            f"Moodboard showing ONLY individual furniture pieces for a {style} room. "
+
+            f"Room description: {description}. Purpose: {purpose}. Budget: {budget} SAR. "
+
+            "Pinterest style, clean white background, no people, focus on items."
+
+        )
+
+        try:
+
+            result = client.images.generate(
+
+                model="gpt-image-1",
+
+                prompt=prompt_furniture,
+
+                size="1024x1024",
+
+            )
+
+            st.image(base64.b64decode(result.data[0].b64_json), use_column_width=True)
+
+        except Exception as e:
+
+            st.error(f"Furniture moodboard failed: {e}")
+
+
+
+    # ----- 2) Colors + Materials -----
+
+    with col2:
+
+        st.markdown("#### 🎨 Color Palette & Materials")
+
+        prompt_colors = (
+
+            f"Color palette board + materials for a {style} interior. "
+
+            f"Room description: {description}. Purpose: {purpose}. "
+
+            "Show swatches, fabrics, wood, metal, stone, organized nicely."
+
+        )
+
+        try:
+
+            result = client.images.generate(
+
+                model="gpt-image-1",
+
+                prompt=prompt_colors,
+
+                size="1024x1024",
+
+            )
+
+            st.image(base64.b64decode(result.data[0].b64_json), use_column_width=True)
+
+        except Exception as e:
+
+            st.error(f"Color palette moodboard failed: {e}")
+
+
+
+    # ----- 3) Lighting Mood -----
+
+    st.markdown("#### 💡 Lighting Mood")
+
+    prompt_lighting = (
+
+        f"Lighting mood board for a {style} interior. Warm cozy cinematic lighting, "
+
+        f"focus on lamps, wall lights, ceiling lights that match: {description}."
+
+    )
 
     try:
 
-        # ======= 1) Furniture =======
-
-        col1, col2 = st.columns(2)
-
-
-
-        with col1:
-
-            st.markdown("#### 🛋️ Furniture")
-
-            furniture_img = client.images.generate(
-
-                model="gpt-image-1",
-
-                prompt=f"Moodboard showing furniture pieces for a {style} room. Room: {description}. Purpose: {purpose}. Budget: {budget} SAR.",
-
-                size="1024x1024"
-
-            )
-
-            img_bytes = base64.b64decode(furniture_img.data[0].b64_json)
-
-            st.image(img_bytes)
-
-
-
-        # ======= 2) Color Palette =======
-
-        with col2:
-
-            st.markdown("#### 🎨 Colors")
-
-            colors_img = client.images.generate(
-
-                model="gpt-image-1",
-
-                prompt=f"Color palette + materials for a {style} interior. Room: {description}. Purpose: {purpose}. Budget: {budget} SAR.",
-
-                size="1024x1024"
-
-            )
-
-            img_bytes = base64.b64decode(colors_img.data[0].b64_json)
-
-            st.image(img_bytes)
-
-
-
-        # ======= 3) Lighting Mood =======
-
-        st.markdown("#### 💡 Lighting Mood")
-
-        lighting_img = client.images.generate(
+        result = client.images.generate(
 
             model="gpt-image-1",
 
-            prompt=f"Lighting mood, warm cozy cinematic lighting for {style} interior.",
+            prompt=prompt_lighting,
 
-            size="1024x1024"
-
-        )
-
-        st.image(base64.b64decode(lighting_img.data[0].b64_json))
-
-
-
-        # ======= 4) 3D Render =======
-
-        st.markdown("#### 🏡 3D Render")
-
-        render_img = client.images.generate(
-
-            model="gpt-image-1",
-
-            prompt=f"3D render of a {style} room with budget {budget} SAR. Room: {description}. Purpose: {purpose}. Realistic Pinterest-level.",
-
-            size="1024x1024"
+            size="1024x1024",
 
         )
 
-        st.image(base64.b64decode(render_img.data[0].b64_json))
-
-
+        st.image(base64.b64decode(result.data[0].b64_json), use_column_width=True)
 
     except Exception as e:
 
-        st.error(f"Image generation failed: {e}")
-
-        return None
+        st.error(f"Lighting mood failed: {e}")
 
 
 
 
-# ---------- WHEN BUTTON CLICKED ----------
+
+# ================= عند الضغط على الزر =================
 
 if clicked:
 
@@ -402,7 +372,7 @@ if clicked:
 
         with st.spinner("✨ Agents are analyzing your space..."):
 
-            # 1) استدعاء الوكلاء
+
 
             architect_answer = call_agent(
 
@@ -452,17 +422,15 @@ if clicked:
 
 
 
-            # 2) ملخص عام للعميل
-
             summary_prompt = f"""
 
 You are a senior interior designer.
 
 
 
-Create a friendly client-facing summary (max 2 paragraphs + bullet list)
+Create a friendly summary (max 2 paragraphs + bullet list)
 
-for this room design in English:
+for this client based on:
 
 
 
@@ -476,15 +444,15 @@ Budget: {budget} SAR
 
 
 
-Summarize the key ideas from:
+The summary should highlight:
 
-- Architectural / layout plan
+- main layout idea
 
-- Furniture plan
+- key furniture choices
 
-- Color palette plan
+- key color palette and materials
 
-"""
+            """
 
 
 
@@ -498,17 +466,11 @@ Summarize the key ideas from:
 
                         "role": "system",
 
-                        "content": "You summarize interior design plans in simple, client-friendly English.",
+                        "content": "You summarize interior designs for non-technical clients in simple English.",
 
                     },
 
-                    {
-
-                        "role": "user",
-
-                        "content": summary_prompt,
-
-                    },
+                    {"role": "user", "content": summary_prompt},
 
                 ],
 
@@ -518,21 +480,7 @@ Summarize the key ideas from:
 
 
 
-            # 3) توليد الصورة (اختياري)
-
-            image_bytes = None
-
-            if generate_moodboard:
-
-                image_bytes = generate_moodboard_image(
-
-                    description, style, purpose, budget, uploaded_photo
-
-                )
-
-
-
-            # 4) حفظ النّتائج في session_state
+            # حفظ النتائج في session_state
 
             st.session_state["results"] = {
 
@@ -544,13 +492,19 @@ Summarize the key ideas from:
 
                 "colors": color_answer,
 
-                "image_bytes": image_bytes,
+                "description": description,
+
+                "style": style,
+
+                "purpose": purpose,
+
+                "budget": budget,
 
             }
 
 
 
-# ---------- RIGHT: RESULTS ----------
+# ================= RIGHT: Tabs + Results =================
 
 with right_col:
 
@@ -558,25 +512,19 @@ with right_col:
 
 
 
-    # ✨ Tabs always appear directly under the title (fixed)
-
-    tab_overview, tab_arch, tab_furniture, tab_colors, tab_moodboard, tab_3d = st.tabs(
+    tab_overview, tab_arch, tab_furn, tab_colors, tab_mood, tab_render = st.tabs(
 
         ["Overview", "Architect Plan", "Furniture Plan", "Color Palette", "AI Moodboard", "3D Render"]
 
     )
 
 
-# Load results safely
-
-if "results" in st.session_state:
 
     results = st.session_state["results"]
 
-else:
 
-    results = None
 
+    # ------ 1) Overview ------
 
     with tab_overview:
 
@@ -588,11 +536,13 @@ else:
 
         else:
 
-            st.info("اضغطي على **Generate Full Interior Plan** بعد ما تعبّين بيانات الغرفة.")
+            st.info("اضغطي **Generate Full Interior Plan** بعد تعبئة البيانات.")
 
 
 
-    with tab_architect:
+    # ------ 2) Architect ------
+
+    with tab_arch:
 
         if results["architect"]:
 
@@ -602,11 +552,13 @@ else:
 
         else:
 
-            st.info("سيظهر هنا مخطط توزيع الغرفة (layout) بعد تشغيل الأداة.")
+            st.info("سيظهر هنا مخطط توزيع الغرفة بعد تشغيل الأداة.")
 
 
 
-    with tab_furniture:
+    # ------ 3) Furniture ------
+
+    with tab_furn:
 
         if results["furniture"]:
 
@@ -616,9 +568,11 @@ else:
 
         else:
 
-            st.info("سيظهر هنا تحليل الأثاث واقتراح القطع بعد تشغيل الأداة.")
+            st.info("سيظهر هنا تحليل الأثاث بعد تشغيل الأداة.")
 
 
+
+    # ------ 4) Colors ------
 
     with tab_colors:
 
@@ -632,126 +586,72 @@ else:
 
             st.info("سيظهر هنا اقتراح الألوان والمواد بعد تشغيل الأداة.")
 
-with tab_moodboard:
 
 
+    # ------ 5) Moodboard ------
 
-    st.markdown("## 🎨 AI Moodboard (Furniture + Colors + Lighting + 3D Render)")
+    with tab_mood:
 
+        st.markdown("## 🎨 AI Moodboard")
 
+        if generate_moodboard and results["description"]:
 
-    col1, col2= st.columns(2)
+            render_moodboard_block(
 
+                results["style"],
 
+                results["description"],
 
-    # ----- 1) Furniture Pieces -----
+                results["purpose"],
 
-    with col1:
-
-        furniture_img = client.images.generate(
-
-            model="gpt-image-1",
-
-            prompt=f"Moodboard showing ONLY furniture pieces for a {style} room.",
-
-            size="1024x1024"
-
-        )
-
-        st.markdown("#### 🪑 Furniture")
-
-        st.image(base64.b64decode(furniture_img.data[0].b64_json))
-
-
-    # ----- 2) Colors + Materials -----
-
-    with col2:
-
-        colors_img = client.images.generate(
-
-            model="gpt-image-1",
-
-            prompt=f"Color palette + materials for a {style} interior.",
-
-            size="1024x1024"
-
-        )
-
-        st.markdown("#### 🎨 Colors")
-
-        st.image(base64.b64decode(colors_img.data[0].b64_json))
-
- # --- IMAGE GENERATION ---
-
-    if uploaded_photo is not None:
-
-        # User uploaded a photo → edit mode
-
-        try:
-
-            result = client.images.edit(
-
-                model="gpt-image-1",
-
-                image=uploaded_photo,
-
-                prompt=img_prompt,
-
-                size="1024x1024"
+                results["budget"],
 
             )
 
+        else:
 
-
-            image_base64 = result.data[0].b64_json
-
-            image_bytes = base64.b64decode(image_base64)
-
-
-
-            return image_bytes
+            st.info("فعّلي خيار Generate AI Moodboard واعملي Generate.")
 
 
 
-        except Exception as e:
+    # ------ 6) 3D Render ------
 
-            st.error("Image editing failed: " + str(e))
+    with tab_render:
 
-            return None
+        st.markdown("## 🏡 3D Render")
 
+        if results["description"]:
 
+            prompt_3d = (
 
-    else:
+                f"Ultra realistic 3D render of a {results['style']} {results['purpose']} room, "
 
-        # Generate from scratch
+                f"budget {results['budget']} SAR. {results['description']}. "
 
-        try:
-
-            result = client.images.generate(
-
-                model="gpt-image-1",
-
-                prompt=img_prompt,
-
-                size="1024x1024"
+                "Cinematic lighting, Pinterest style, no people, wide angle."
 
             )
 
+            try:
 
+                img_3d = client.images.generate(
 
-            image_base64 = result.data[0].b64_json
+                    model="gpt-image-1",
 
-            image_bytes = base64.b64decode(image_base64)
+                    prompt=prompt_3d,
 
+                    size="1024x1024",
 
+                )
 
-            return image_bytes
+                st.image(base64.b64decode(img_3d.data[0].b64_json), use_column_width=True)
 
+            except Exception as e:
 
+                st.error(f"3D render failed: {e}")
 
-        except Exception as e:
+        else:
 
-            st.error("Image generation failed: " + str(e))
+            st.info("اكتبي وصف الغرفة ثم اضغطي Generate.")
 
-            return None
 
