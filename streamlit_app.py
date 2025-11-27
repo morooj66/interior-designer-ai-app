@@ -681,7 +681,7 @@ with tab_moodboard:
 
         st.image(base64.b64decode(colors_img.data[0].b64_json))
 
-
+try:
         except Exception as e:
 
             st.error("3D render failed: " + str(e))
