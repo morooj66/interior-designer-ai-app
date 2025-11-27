@@ -289,97 +289,103 @@ Give a clear, structured plan in bullet points. Be specific and practical.
 
 
 # ---------- HELPER: GENERATE MOODBOARD IMAGE ----------
-
 def generate_moodboard_image(description: str, style: str, purpose: str, budget: int, uploaded_photo):
 
-    """
-
-    إذا فيه صورة يرسلها كـ reference مع تعديل بسيط.
-
-    إذا ما فيه، يولّد صورة من الصفر.
-
-    يرجع bytes للصورة أو None.
-
-    """
-
-    img_prompt = f"""
-
-High-end interior design moodboard for a {style} room.
-
-
-
-Room: {description}
-
-Purpose: {purpose}
-
-Budget level: around {budget} SAR (mid-range Saudi market).
-
-
-
-Show:
-
-- wall colors and textures
-
-- main furniture pieces
-
-- lighting mood
-
-- textiles and decor
-
-Style must look realistic, Pinterest-level, cinematic lighting, 3D render style.
-
-"""
+    st.markdown("### 🎨 AI Moodboard (Furniture + Colors + Lighting + 3D Render)")
 
 
 
     try:
 
-        if uploaded_photo is not None:
+        # ======= 1) Furniture =======
 
-            # استخدم الصورة كمرجع تعديل
+        col1, col2 = st.columns(2)
 
-            result = client.images.edit(
 
-                model="gpt-image-1",
 
-                image=uploaded_photo,
+        with col1:
 
-                prompt=img_prompt,
+            st.markdown("#### 🛋️ Furniture")
 
-                size="1024x1024",
-
-            )
-
-        else:
-
-            # توليد من الصفر
-
-            result = client.images.generate(
+            furniture_img = client.images.generate(
 
                 model="gpt-image-1",
 
-                prompt=img_prompt,
+                prompt=f"Moodboard showing furniture pieces for a {style} room. Room: {description}. Purpose: {purpose}. Budget: {budget} SAR.",
 
-                size="1024x1024",
+                size="1024x1024"
 
             )
 
+            img_bytes = base64.b64decode(furniture_img.data[0].b64_json)
+
+            st.image(img_bytes)
 
 
-        image_base64 = result.data[0].b64_json
 
-        image_bytes = base64.b64decode(image_base64)
+        # ======= 2) Color Palette =======
 
-        return image_bytes
+        with col2:
+
+            st.markdown("#### 🎨 Colors")
+
+            colors_img = client.images.generate(
+
+                model="gpt-image-1",
+
+                prompt=f"Color palette + materials for a {style} interior. Room: {description}. Purpose: {purpose}. Budget: {budget} SAR.",
+
+                size="1024x1024"
+
+            )
+
+            img_bytes = base64.b64decode(colors_img.data[0].b64_json)
+
+            st.image(img_bytes)
+
+
+
+        # ======= 3) Lighting Mood =======
+
+        st.markdown("#### 💡 Lighting Mood")
+
+        lighting_img = client.images.generate(
+
+            model="gpt-image-1",
+
+            prompt=f"Lighting mood, warm cozy cinematic lighting for {style} interior.",
+
+            size="1024x1024"
+
+        )
+
+        st.image(base64.b64decode(lighting_img.data[0].b64_json))
+
+
+
+        # ======= 4) 3D Render =======
+
+        st.markdown("#### 🏡 3D Render")
+
+        render_img = client.images.generate(
+
+            model="gpt-image-1",
+
+            prompt=f"3D render of a {style} room with budget {budget} SAR. Room: {description}. Purpose: {purpose}. Realistic Pinterest-level.",
+
+            size="1024x1024"
+
+        )
+
+        st.image(base64.b64decode(render_img.data[0].b64_json))
 
 
 
     except Exception as e:
 
-        st.warning(f"⚠️ Image generation failed: {e}")
+        st.error(f"Image generation failed: {e}")
 
         return None
-
 
 
 
