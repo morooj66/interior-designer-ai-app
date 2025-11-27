@@ -44,15 +44,15 @@ with st.sidebar:
 
     st.markdown("""
 
-- 🏛️ Architect Agent  
+-  Architect Agent  
 
-- 🪑 Furniture Agent  
+-  Furniture Agent  
 
-- 🎨 Color Palette Expert  
+-  Color Palette Expert  
 
-- 🖼️ AI Moodboard  
+-  AI Moodboard  
 
-- 🏡 3D Render Generator  
+-  3D Render Generator  
 
 """)
 
@@ -360,7 +360,7 @@ with right:
 
         with tabs[0]:
 
-            st.markdown("## 🧾 Overview")
+            st.markdown("##  Overview")
 
             st.markdown(results["summary"])
 
@@ -368,7 +368,7 @@ with right:
 
         with tabs[1]:
 
-            st.markdown("## 🏛️ Architect Plan")
+            st.markdown("##  Architect Plan")
 
             st.markdown(results["architect"])
 
@@ -376,7 +376,7 @@ with right:
 
         with tabs[2]:
 
-            st.markdown("## 🪑 Furniture Plan")
+            st.markdown("##  Furniture Plan")
 
             st.markdown(results["furniture"])
 
@@ -384,7 +384,7 @@ with right:
 
         with tabs[3]:
 
-            st.markdown("## 🎨 Color Palette")
+            st.markdown("##  Color Palette")
 
             st.markdown(results["colors"])
 
@@ -392,7 +392,7 @@ with right:
 
         with tabs[4]:
 
-            st.markdown("## 🎨 Moodboard")
+            st.markdown("##  Moodboard")
 
             if results["moodboard"]:
 
@@ -406,7 +406,7 @@ with right:
 
         with tabs[5]:
 
-            st.markdown("## 🏡 3D Render")
+            st.markdown("##  3D Render")
 
             if results["render"]:
 
