@@ -73,18 +73,13 @@ if "results" not in st.session_state:
     }
 
 
-
-# ---------- LAYOUT ----------
-
-left_col, right_col = st.columns([1, 1.2])
+left_col, right_col = st.columns([1, 2])
 
 
-
-# ---------- LEFT: ROOM INPUTS ----------
 
 with left_col:
 
-    st.markdown("### 📋 Room Details")
+    st.markdown("### 🧾 Room Details")
 
 
 
@@ -126,7 +121,7 @@ with left_col:
 
         min_value=500,
 
-        max_value=200_000,
+        max_value=200000,
 
         value=5000,
 
@@ -142,7 +137,7 @@ with left_col:
 
         "Upload a reference photo (optional)",
 
-        type=["jpg", "jpeg", "png"],
+        type=["jpg", "jpeg", "png"]
 
     )
 
@@ -162,6 +157,71 @@ with left_col:
 
     clicked = st.button("✨ Generate Full Interior Plan", use_container_width=True)
 
+
+
+------ OUTPUT TABS (This MUST be outside the columns) ------
+
+tabs = st.tabs(["Overview", "Architect Plan", "Furniture Plan", "Color Palette", "AI Moodboard", "3D Render"])
+
+
+
+with tabs[0]:
+
+    st.markdown("## Overview")
+
+    st.write(summary_answer)
+
+
+
+with tabs[1]:
+
+    st.markdown("## Architect Plan")
+
+    st.write(architect_answer)
+
+
+
+with tabs[2]:
+
+    st.markdown("## Furniture Plan")
+
+    st.write(furniture_answer)
+
+
+
+with tabs[3]:
+
+    st.markdown("## Color Palette")
+
+    st.write(color_answer)
+
+
+
+with tabs[4]:
+
+    st.markdown("## AI Moodboard")
+
+    if moodboard_img:
+
+        st.image(moodboard_img, use_column_width=True)
+
+    else:
+
+        st.info("No moodboard generated.")
+
+
+
+with tabs[5]:
+
+    st.markdown("## 3D Render")
+
+    if render_img:
+
+        st.image(render_img, use_column_width=True)
+
+    else:
+
+        st.info("3D render not available.")
 
 
 # ---------- HELPER: CALL CHAT AGENT ----------
@@ -574,9 +634,7 @@ with tab_moodboard:
 
 
 
-    # نعمل 4 أو 5 أعمدة — حسب عدد الصور اللي تبينها
-
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2= st.columns(2)
 
 
 
@@ -599,9 +657,6 @@ with tab_moodboard:
         st.image(base64.b64decode(furniture_img.data[0].b64_json))
 
 
-
-
-
     # ----- 2) Colors + Materials -----
 
     with col2:
@@ -619,53 +674,6 @@ with tab_moodboard:
         st.markdown("#### 🎨 Colors")
 
         st.image(base64.b64decode(colors_img.data[0].b64_json))
-
-
-
-
-
-    # ----- 3) Lighting Mood -----
-
-    with col3:
-
-        light_img = client.images.generate(
-
-            model="gpt-image-1",
-
-            prompt=f"Lighting mood board for a {style} {purpose} room.",
-
-            size="1024x1024"
-
-        )
-
-        st.markdown("#### 💡 Lighting")
-
-        st.image(base64.b64decode(light_img.data[0].b64_json))
-
-
-
-
-
-    # ----- 4) Full 3D Render -----
-
-    with col4:
-
-        try:
-
-            full_3d = client.images.generate(
-
-                model="gpt-image-1",
-
-                prompt=f"Ultra realistic 3D render of a {style} {purpose} room. Cinematic lighting, premium materials.",
-
-                size="1024x1024"
-
-            )
-
-            st.markdown("#### 🛋️ 3D Render")
-
-            st.image(base64.b64decode(full_3d.data[0].b64_json))
-
 
 
         except Exception as e:
